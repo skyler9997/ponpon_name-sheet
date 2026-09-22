@@ -1,0 +1,925 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>字帖產生器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c2333;
+    --paper:#fffdf6;
+    --paper-line:#c9d6ef;
+    --accent:#2f5fd6;
+    --accent-soft:#e8eefc;
+    --accent-2:#f2a740;
+    --shell-bg:#eef2f9;
+    --panel-bg:#ffffff;
+    --panel-border:#dbe3f2;
+    --muted:#6b7690;
+    --danger:#c14953;
+    --focus:#2f5fd6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --shell-bg:#12151d;
+      --panel-bg:#1a1e29;
+      --panel-border:#2b3040;
+      --muted:#8b93ab;
+      --ink:#e7ebf5;
+    }
+  }
+  :root[data-theme="dark"]{
+    --shell-bg:#12151d;
+    --panel-bg:#1a1e29;
+    --panel-border:#2b3040;
+    --muted:#8b93ab;
+    --ink:#e7ebf5;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--shell-bg);
+    color:var(--ink);
+    font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+    padding-block:28px;
+  }
+  body{padding-left:16px;padding-right:16px;}
+
+  .app{
+    max-width:1400px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:300px 1fr;
+    gap:24px;
+    align-items:start;
+  }
+  @media (max-width:880px){
+    .app{grid-template-columns:1fr;}
+  }
+
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:18px;
+    grid-column:1/-1;
+  }
+  .brand h1{
+    font-size:22px;
+    margin:0;
+    letter-spacing:1px;
+  }
+  .brand span{
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  .panel{
+    background:var(--panel-bg);
+    border:1px solid var(--panel-border);
+    border-radius:16px;
+    padding:20px;
+    position:sticky;
+    top:20px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:8px;
+    color:var(--ink);
+  }
+  .field .hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+    line-height:1.5;
+  }
+  input[type="text"], select{
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid var(--panel-border);
+    background:var(--shell-bg);
+    color:var(--ink);
+    font-size:18px;
+    font-family:inherit;
+  }
+  input[type="text"]:focus, select:focus, button:focus-visible{
+    outline:2px solid var(--focus);
+    outline-offset:2px;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .stepper button{
+    width:32px;height:32px;
+    border-radius:8px;
+    border:1px solid var(--panel-border);
+    background:var(--shell-bg);
+    color:var(--ink);
+    font-size:16px;
+    cursor:pointer;
+  }
+  .stepper output{
+    min-width:26px;
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+    font-weight:700;
+  }
+  .toggle-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    font-size:14px;
+  }
+  .switch{
+    position:relative;
+    width:44px;height:26px;
+    flex-shrink:0;
+  }
+  .switch input{position:absolute;opacity:0;inset:0;cursor:pointer;margin:0;}
+  .switch .track{
+    position:absolute;inset:0;
+    background:var(--panel-border);
+    border-radius:999px;
+    transition:background .15s;
+  }
+  .switch .thumb{
+    position:absolute;top:3px;left:3px;
+    width:20px;height:20px;border-radius:50%;
+    background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,.3);
+    transition:transform .15s;
+  }
+  .switch input:checked + .track{background:var(--accent);}
+  .switch input:checked ~ .thumb{transform:translateX(18px);}
+
+  .grid-options{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .grid-options button{
+    padding:10px 6px;
+    border-radius:10px;
+    border:1.5px solid var(--panel-border);
+    background:var(--shell-bg);
+    color:var(--ink);
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .grid-options button.active{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+    color:var(--accent);
+    font-weight:700;
+  }
+
+  .print-btn{
+    margin-top:4px;
+    padding:12px 16px;
+    border-radius:12px;
+    border:none;
+    background:var(--accent);
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+  .print-btn:hover{background:#2650bd;}
+  #downloadBtn:hover{background:#2f7d55;}
+  #downloadBtn:disabled{opacity:.6;cursor:default;}
+
+
+  /* ---- preview / sheet ---- */
+  .preview-wrap{
+    overflow-x:auto;
+    padding-bottom:8px;
+  }
+  .sheet{
+    width:1400px;
+    max-width:none;
+    background:var(--paper);
+    border-radius:18px;
+    padding:36px 40px;
+    box-shadow:0 10px 40px rgba(20,30,60,.12);
+    color:#1c2333;
+  }
+  .sheet.portrait{
+    width:900px;
+  }
+  .sheet.portrait .big-cell{
+    flex:1 1 0;
+    min-width:0;
+  }
+  .sheet-header{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:20px;
+    margin-bottom:26px;
+    position:relative;
+  }
+  .sheet-title{
+    background:#dbeaff;
+    border-radius:36px;
+    padding:14px 46px;
+  }
+  .sheet-title span{
+    font-size:36px;
+    font-weight:900;
+    color:#1a56db;
+    letter-spacing:10px;
+  }
+  .sheet-name{
+    position:absolute;
+    right:0;
+    top:6px;
+    border:2.5px solid #1a56db;
+    border-radius:12px;
+    padding:10px 20px;
+    font-size:20px;
+    font-weight:700;
+    color:#1a2b4a;
+    background:#fff;
+    white-space:nowrap;
+  }
+  .sheet-name b{color:#1a56db;}
+  .pencil{width:44px;height:44px;flex-shrink:0;}
+
+  .big-row{
+    display:flex;
+    gap:18px;
+    margin-bottom:24px;
+    flex-wrap:wrap;
+  }
+  .big-cell{
+    flex:1 1 260px;
+    min-width:220px;
+  }
+  .big-box{
+    height:360px;
+    border:2.5px solid #2d5fd9;
+    border-radius:14px;
+    background:
+      linear-gradient(#a9c6f6,#a9c6f6) no-repeat center / 100% 2px,
+      linear-gradient(#a9c6f6,#a9c6f6) no-repeat center / 2px 100%;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+  .big-box.diag::before, .big-box.diag::after{
+    content:"";
+    position:absolute;
+    background:#c3d6f5;
+  }
+  .big-box.diag::before{width:1.5px;height:395px;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);}
+  .big-box.diag::after{width:1.5px;height:395px;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);}
+  .big-inner{width:90%;height:90%;position:relative;z-index:2;}
+
+  .practice-rows{display:flex;flex-direction:column;gap:12px;}
+  .prow{
+    display:flex;
+    border:2.5px solid #2d5fd9;
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .plabel{
+    width:104px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:56px;
+    font-weight:700;
+    color:#111;
+    border-right:2.5px solid #2d5fd9;
+    background:#fff;
+  }
+  .pcells{display:flex;flex:1;}
+  .pcell{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:104px;
+    position:relative;
+    border-right:1.5px dashed #a9c6f2;
+  }
+  .pcell::before, .pcell::after{
+    content:"";
+    position:absolute;
+    border-color:#a9c6f2;
+    border-style:dashed;
+  }
+  .pcell::before{ /* horizontal center line */
+    left:0; right:0; top:50%;
+    border-top-width:1.5px;
+    border-bottom:none; border-left:none; border-right:none;
+  }
+  .pcell::after{ /* vertical center line */
+    top:0; bottom:0; left:50%;
+    border-left-width:1.5px;
+    border-top:none; border-bottom:none; border-right:none;
+  }
+  .pcell:last-child{border-right:none;}
+  .pcell svg{width:78px;height:78px;position:relative;z-index:1;}
+
+  .empty-msg{
+    padding:60px 20px;
+    text-align:center;
+    color:var(--muted);
+    font-size:15px;
+  }
+
+  .sheet > img.print-image{
+    display:block;
+    width:100%;
+    height:auto;
+  }
+
+  @media print{
+    body{background:#fff;padding:0;}
+    .panel, .brand{display:none !important;}
+    .app{display:block;}
+    .preview-wrap{overflow:visible;padding:0;}
+    /* The printed image (see printBtn below) is pre-rendered onto a
+       canvas that is already exactly A4-shaped with its own baked-in
+       margin, so the page itself prints with no CSS margin/padding —
+       otherwise the margin would be applied twice and the image would
+       print smaller than the page with blank space around it. */
+    .sheet{box-shadow:none;border-radius:0;width:100%;padding:0;}
+    /* @page size itself is set at print time by #pageSizeStyle (below),
+       since it needs to switch between landscape/portrait with the
+       orientation toggle; this is just the fallback if that's missing. */
+    @page{size:A4 landscape;margin:0;}
+  }
+</style>
+<style id="pageSizeStyle">@page{size:A4 landscape;margin:0;}</style>
+
+<div class="app">
+  <div class="brand">
+    <h1>手寫字帖產生器</h1>
+    <span>輸入姓名或文字，自動產生大字描摹與虛線練習的字帖</span>
+  </div>
+
+  <div class="panel">
+    <div class="field">
+      <label for="textInput">練習內容</label>
+      <input id="textInput" type="text" maxlength="8" value="彭姵瑀" autocomplete="off">
+      <div class="hint">最多 8 個字，支援中文姓名或任意文字。</div>
+    </div>
+
+    <div class="field">
+      <label>格線樣式</label>
+      <div class="grid-options">
+        <button type="button" data-grid="diag" class="active">米字格</button>
+        <button type="button" data-grid="cross">田字格</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>版面方向</label>
+      <div class="grid-options">
+        <button type="button" data-orientation="landscape" class="active">橫式</button>
+        <button type="button" data-orientation="portrait">直式</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="row">
+        <label style="margin:0;">每行練習次數</label>
+        <div class="stepper">
+          <button type="button" id="repMinus">－</button>
+          <output id="repVal">8</output>
+          <button type="button" id="repPlus">＋</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="print-btn" id="printBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+      列印 / 存成 PDF
+    </button>
+
+    <button class="print-btn" id="downloadBtn" style="background:#3a9b6b;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      下載圖片 (PNG)
+    </button>
+    <div class="hint" id="downloadHint" style="margin-top:-8px;"></div>
+
+  </div>
+
+  <div class="preview-wrap">
+    <div class="sheet" id="sheet"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var state = {
+    text: '彭姵瑀',
+    grid: 'diag',
+    reps: 8,
+    orientation: 'landscape'
+  };
+
+  var pencilBlue = '<svg class="pencil" viewBox="0 0 100 100"><g transform="rotate(45 50 50)">'+
+    '<rect x="42" y="10" width="16" height="60" rx="3" fill="#4a90e2"/>'+
+    '<polygon points="42,70 58,70 50,92" fill="#f2c265"/>'+
+    '<polygon points="47,82 53,82 50,92" fill="#5a4632"/>'+
+    '<rect x="42" y="10" width="16" height="10" rx="3" fill="#3a5fcd"/></g></svg>';
+  var pencilPink = '<svg class="pencil" viewBox="0 0 100 100"><g transform="rotate(-45 50 50)">'+
+    '<rect x="42" y="10" width="16" height="60" rx="3" fill="#ec4899"/>'+
+    '<polygon points="42,70 58,70 50,92" fill="#f2c265"/>'+
+    '<polygon points="47,82 53,82 50,92" fill="#5a4632"/>'+
+    '<rect x="42" y="10" width="16" height="10" rx="3" fill="#be185d"/></g></svg>';
+
+  function esc(s){
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  var GLYPH_FONT = '\'Noto Serif TC\',\'Kaiti TC\',\'KaiTi\',\'DFKai-SB\',\'BiauKai\',\'Noto Serif CJK TC\',serif';
+  var GLYPH_WEIGHT = 600;
+  var PAPER = '#fffdf6';
+
+  function fontOutlineSVG(ch, size, outerColor, borderWidth){
+    var e = esc(ch);
+    var dilateWidth = borderWidth * 2;
+    var outline = '<g class="glyph-group">'+
+      '<text class="glyph-ref" x="100" y="100" font-size="'+size+'" font-family="'+GLYPH_FONT+'" font-weight="'+GLYPH_WEIGHT+'" '+
+      'fill="'+outerColor+'" stroke="'+outerColor+'" stroke-width="'+dilateWidth+'" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">'+e+'</text>'+
+      '<text x="100" y="100" font-size="'+size+'" font-family="'+GLYPH_FONT+'" font-weight="'+GLYPH_WEIGHT+'" '+
+      'fill="'+PAPER+'" text-anchor="middle" dominant-baseline="central">'+e+'</text>'+
+      '</g>';
+    return '<svg viewBox="0 0 200 200" width="100%" height="100%">'+outline+'</svg>';
+  }
+
+  function bigCellSVG(ch){
+    return {svg: fontOutlineSVG(ch, 186, 'black', 3)};
+  }
+
+  function pcellSVG(ch){
+    return fontOutlineSVG(ch, 168, '#96A0B5', 2.2);
+  }
+
+  function centerGlyphs(root){
+    root.querySelectorAll('.glyph-group').forEach(function(g){
+      try{
+        g.removeAttribute('transform');
+        var ref = g.querySelector('.glyph-ref');
+        var bbox = ref.getBBox();
+        if(!bbox || !bbox.width || !bbox.height) return;
+        var cx = bbox.x + bbox.width / 2;
+        var cy = bbox.y + bbox.height / 2;
+        var dx = 100 - cx;
+        var dy = 100 - cy;
+        g.setAttribute('transform', 'translate(' + dx + ',' + dy + ')');
+      }catch(e){}
+    });
+  }
+
+  function render(){
+    var chars = Array.from(state.text || '').filter(function(c){ return c.trim().length; });
+    var sheet = document.getElementById('sheet');
+    sheet.classList.toggle('portrait', state.orientation === 'portrait');
+
+    var pageStyle = document.getElementById('pageSizeStyle');
+    if(pageStyle){
+      pageStyle.textContent = '@page{size:A4 ' + state.orientation + ';margin:0;}';
+    }
+
+    if(chars.length === 0){
+      sheet.innerHTML = '<div class="empty-msg">請在左側輸入要練習的姓名或文字</div>';
+      return;
+    }
+
+    var header = '<div class="sheet-header">'+pencilBlue+
+      '<div class="sheet-title"><span>'+esc('姓 名 練 習 表')+'</span></div>'+
+      pencilPink+
+      '<div class="sheet-name">姓名：<b>'+esc(chars.join(''))+'</b></div></div>';
+
+    var bigRow = '<div class="big-row">';
+    chars.forEach(function(ch){
+      var res = bigCellSVG(ch);
+      var gridClass = state.grid === 'diag' ? 'diag' : '';
+      bigRow += '<div class="big-cell">'+
+        '<div class="big-box '+gridClass+'"><div class="big-inner">'+res.svg+'</div></div>'+
+        '</div>';
+    });
+    bigRow += '</div>';
+
+    var rowsHtml = '<div class="practice-rows">';
+    chars.forEach(function(ch){
+      rowsHtml += '<div class="prow"><div class="plabel">'+esc(ch)+'</div><div class="pcells">';
+      for(var i=0;i<state.reps;i++){
+        rowsHtml += '<div class="pcell">'+pcellSVG(ch)+'</div>';
+      }
+      rowsHtml += '</div></div>';
+    });
+    rowsHtml += '</div>';
+
+    sheet.innerHTML = header + bigRow + rowsHtml;
+    centerGlyphs(sheet);
+  }
+
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){
+      render();
+    }).catch(function(){});
+  }
+
+  document.getElementById('textInput').addEventListener('input', function(e){
+    state.text = e.target.value;
+    render();
+  });
+  document.querySelectorAll('.grid-options button[data-grid]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      btn.parentElement.querySelectorAll('button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.grid = btn.getAttribute('data-grid');
+      render();
+    });
+  });
+  document.querySelectorAll('.grid-options button[data-orientation]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      btn.parentElement.querySelectorAll('button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.orientation = btn.getAttribute('data-orientation');
+      render();
+    });
+  });
+  document.getElementById('repMinus').addEventListener('click', function(){
+    state.reps = Math.max(4, state.reps - 1);
+    document.getElementById('repVal').textContent = state.reps;
+    render();
+  });
+  document.getElementById('repPlus').addEventListener('click', function(){
+    state.reps = Math.min(12, state.reps + 1);
+    document.getElementById('repVal').textContent = state.reps;
+    render();
+  });
+  // Printing the live DOM directly can render slightly differently than
+  // what "下載圖片" produces (font timing, sub-pixel layout, etc). To make
+  // print output match the downloaded image exactly, render the sheet to
+  // the same canvas used for the PNG export, swap the live content for a
+  // plain <img> of that canvas just before printing, then restore the
+  // interactive content again once the print dialog closes.
+  document.getElementById('printBtn').addEventListener('click', function(){
+    var btn = this;
+    var sheet = document.getElementById('sheet');
+    if(!sheet || sheet.querySelector('.empty-msg')){
+      window.print();
+      return;
+    }
+    btn.disabled = true;
+    var original = sheet.innerHTML;
+    var restored = false;
+    function restore(){
+      if(restored) return;
+      restored = true;
+      sheet.innerHTML = original;
+      centerGlyphs(sheet);
+      btn.disabled = false;
+      window.removeEventListener('afterprint', restore);
+    }
+    drawSheetToCanvas({a4: true}).then(function(canvas){
+      var dataUrl = canvas.toDataURL('image/png');
+      var img = new Image();
+      img.className = 'print-image';
+      img.onload = function(){
+        sheet.innerHTML = '';
+        sheet.appendChild(img);
+        window.addEventListener('afterprint', restore);
+        setTimeout(restore, 15000); // safety net if afterprint never fires
+        window.print();
+      };
+      img.onerror = function(){
+        restored = true; // nothing to restore, DOM untouched
+        btn.disabled = false;
+        window.print();
+      };
+      img.src = dataUrl;
+    }).catch(function(){
+      restored = true;
+      btn.disabled = false;
+      window.print();
+    });
+  });
+
+  function roundRectPath(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+  }
+
+  function svgToImage(svgEl){
+    return new Promise(function(resolve){
+      try{
+        var markup = new XMLSerializer().serializeToString(svgEl);
+        var blob = new Blob([markup], {type:'image/svg+xml;charset=utf-8'});
+        var url = URL.createObjectURL(blob);
+        var img = new Image();
+        img.onload = function(){ URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = function(){ URL.revokeObjectURL(url); resolve(null); };
+        img.src = url;
+      }catch(e){ resolve(null); }
+    });
+  }
+
+  // opts.a4: instead of a canvas exactly the pixel shape of the on-screen
+  // sheet (whatever aspect ratio the content happens to be), render onto a
+  // canvas that is a true A4 page (in the current orientation), with the
+  // sheet content scaled down to fit inside an 8mm margin and centered —
+  // matching what "列印 / 存成 PDF" produces via @page, so the downloaded
+  // PNG can be printed on its own and will line up with A4 paper.
+  function drawSheetToCanvas(opts){
+    opts = opts || {};
+    var sheet = document.getElementById('sheet');
+    var base = sheet.getBoundingClientRect();
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+
+    if(opts.a4){
+      var DPI = 200;
+      var pxPerMm = DPI / 25.4;
+      var marginMm = 8;
+      var a4WidthMm = state.orientation === 'landscape' ? 297 : 210;
+      var a4HeightMm = state.orientation === 'landscape' ? 210 : 297;
+      canvas.width = Math.round(a4WidthMm * pxPerMm);
+      canvas.height = Math.round(a4HeightMm * pxPerMm);
+      var marginPx = marginMm * pxPerMm;
+      var availW = canvas.width - marginPx * 2;
+      var availH = canvas.height - marginPx * 2;
+      var fitScale = Math.min(availW / base.width, availH / base.height);
+      var offsetX = (canvas.width - base.width * fitScale) / 2;
+      var offsetY = (canvas.height - base.height * fitScale) / 2;
+      ctx.fillStyle = '#fffdf6';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(fitScale, fitScale);
+    } else {
+      var scale = 2.5;
+      canvas.width = base.width * scale;
+      canvas.height = base.height * scale;
+      ctx.scale(scale, scale);
+    }
+
+    function rel(el){
+      var r = el.getBoundingClientRect();
+      return {x: r.left-base.left, y: r.top-base.top, w: r.width, h: r.height};
+    }
+    function spacedText(text, cx, cy, spacing){
+      var widths = text.split('').map(function(ch){ return ctx.measureText(ch).width; });
+      var total = widths.reduce(function(a,b){ return a+b; }, 0) + spacing*(text.length-1);
+      var x = cx - total/2;
+      text.split('').forEach(function(ch,i){
+        ctx.fillText(ch, x + widths[i]/2, cy);
+        x += widths[i] + spacing;
+      });
+    }
+
+    roundRectPath(ctx, 0, 0, base.width, base.height, 18);
+    ctx.fillStyle = '#fffdf6';
+    ctx.fill();
+
+    var titleEl = sheet.querySelector('.sheet-title');
+    if(titleEl){
+      var t = rel(titleEl);
+      roundRectPath(ctx, t.x, t.y, t.w, t.h, t.h/2);
+      ctx.fillStyle = '#dbeaff';
+      ctx.fill();
+      ctx.fillStyle = '#1a56db';
+      ctx.font = '900 24px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      spacedText('姓 名 練 習 表', t.x+t.w/2, t.y+t.h/2+1, 7);
+    }
+    var nameEl = sheet.querySelector('.sheet-name');
+    if(nameEl){
+      var n = rel(nameEl);
+      roundRectPath(ctx, n.x, n.y, n.w, n.h, 10);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#1a56db';
+      ctx.stroke();
+      ctx.fillStyle = '#1a2b4a';
+      ctx.font = '700 15px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(nameEl.textContent, n.x+n.w/2, n.y+n.h/2+1);
+    }
+
+    var glyphJobs = [];
+
+    sheet.querySelectorAll('.big-box').forEach(function(box){
+      var b = rel(box);
+      roundRectPath(ctx, b.x, b.y, b.w, b.h, 11);
+      ctx.fillStyle = '#fffdf6';
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = box.classList.contains('diag') ? '#c3d6f5' : '#a9c6f6';
+      if(box.classList.contains('diag')){
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y); ctx.lineTo(b.x+b.w, b.y+b.h);
+        ctx.moveTo(b.x+b.w, b.y); ctx.lineTo(b.x, b.y+b.h);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(b.x+b.w/2, b.y); ctx.lineTo(b.x+b.w/2, b.y+b.h);
+        ctx.moveTo(b.x, b.y+b.h/2); ctx.lineTo(b.x+b.w, b.y+b.h/2);
+        ctx.stroke();
+      }
+      ctx.restore();
+      roundRectPath(ctx, b.x, b.y, b.w, b.h, 11);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#2d5fd9';
+      ctx.stroke();
+      var innerSvg = box.querySelector('svg');
+      if(innerSvg){
+        var inner = rel(innerSvg);
+        glyphJobs.push({svg: innerSvg, x: inner.x, y: inner.y, w: inner.w, h: inner.h});
+      }
+    });
+
+    sheet.querySelectorAll('.prow').forEach(function(prow){
+      var p = rel(prow);
+      roundRectPath(ctx, p.x, p.y, p.w, p.h, 8);
+      ctx.fillStyle = '#fffdf6';
+      ctx.fill();
+      var label = prow.querySelector('.plabel');
+      if(label){
+        var l = rel(label);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(l.x, l.y, l.w, l.h);
+        ctx.fillStyle = '#111111';
+        ctx.font = '700 56px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label.textContent, l.x+l.w/2, l.y+l.h/2+1);
+        ctx.beginPath();
+        ctx.moveTo(l.x+l.w, l.y); ctx.lineTo(l.x+l.w, l.y+l.h);
+        ctx.lineWidth = 2; ctx.strokeStyle = '#2d5fd9'; ctx.stroke();
+      }
+      prow.querySelectorAll('.pcell').forEach(function(cell){
+        var c = rel(cell);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(c.x, c.y, c.w, c.h);
+        ctx.clip();
+        ctx.setLineDash([3,2]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#a9c6f2';
+        ctx.beginPath();
+        ctx.moveTo(c.x+c.w/2, c.y); ctx.lineTo(c.x+c.w/2, c.y+c.h);
+        ctx.moveTo(c.x, c.y+c.h/2); ctx.lineTo(c.x+c.w, c.y+c.h/2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+        var cellSvg = cell.querySelector('svg');
+        if(cellSvg){
+          var ci = rel(cellSvg);
+          glyphJobs.push({svg: cellSvg, x: ci.x, y: ci.y, w: ci.w, h: ci.h});
+        }
+      });
+      roundRectPath(ctx, p.x, p.y, p.w, p.h, 8);
+      ctx.lineWidth = 2; ctx.strokeStyle = '#2d5fd9'; ctx.stroke();
+    });
+
+    return Promise.all(glyphJobs.map(function(job){
+      return svgToImage(job.svg).then(function(img){
+        if(img) ctx.drawImage(img, job.x, job.y, job.w, job.h);
+      });
+    })).then(function(){ return canvas; });
+  }
+
+  var downloadsCap = null;
+  var downloadsChecked = false;
+  function getDownloadsCap(){
+    if(downloadsChecked) return Promise.resolve(downloadsCap);
+    if(typeof claude === 'undefined' || !claude || typeof claude.use !== 'function'){
+      downloadsChecked = true;
+      return Promise.resolve(null);
+    }
+    return claude.use('downloads').then(function(ns){
+      downloadsChecked = true;
+      downloadsCap = ns;
+      return ns;
+    }).catch(function(){
+      downloadsChecked = true;
+      downloadsCap = null;
+      return null;
+    });
+  }
+
+  // Inside the Claude Artifact viewer, a plain <a download> click is
+  // silently ignored by the sandbox — the only way to hand a file to the
+  // viewer is the `downloads` capability (getDownloadsCap above). But when
+  // this same file is hosted as a normal webpage (e.g. GitHub Pages),
+  // there is no `window.claude` at all, and a plain browser download
+  // works completely normally there. So: if `window.claude` doesn't exist,
+  // this isn't the Artifact viewer — use a native anchor download instead
+  // of trying (and being blocked by) the capability API.
+  var hasClaudeHost = typeof claude !== 'undefined' && claude && typeof claude.use === 'function';
+
+  function nativeDownload(blob, filename){
+    try{
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      return true;
+    }catch(e){ return false; }
+  }
+
+  document.getElementById('downloadBtn').addEventListener('click', function(){
+    var btn = this;
+    var hint = document.getElementById('downloadHint');
+    var sheet = document.getElementById('sheet');
+    if(!sheet || sheet.querySelector('.empty-msg')){
+      hint.textContent = '請先輸入練習內容再下載。';
+      return;
+    }
+    btn.disabled = true;
+    hint.textContent = '圖片產生中…';
+    Promise.all([drawSheetToCanvas({a4: true}), hasClaudeHost ? getDownloadsCap() : Promise.resolve(null)]).then(function(results){
+      var canvas = results[0];
+      var downloads = results[1];
+      canvas.toBlob(function(blob){
+        if(!blob){
+          btn.disabled = false;
+          hint.textContent = '圖片產生失敗，請改用列印 / 存成 PDF。';
+          return;
+        }
+        var filename = '字帖_' + (state.text || 'sheet') + '.png';
+        if(downloads){
+          downloads.save({filename: filename, data: blob}).then(function(result){
+            btn.disabled = false;
+            hint.textContent = result && result.status === 'delivered' ? '已送出圖片。' : '已下載圖片。';
+          }).catch(function(err){
+            btn.disabled = false;
+            var code = err && err.code;
+            if(code === 'declined'){
+              hint.textContent = '已取消下載。';
+            } else if(code === 'rate_limited'){
+              hint.textContent = '請稍候再試一次。';
+            } else if(code === 'unavailable' || code === 'not_granted' || code === 'capability_disabled' || code === 'capability_removed'){
+              hint.textContent = '此環境不支援圖片下載，請改用列印 / 存成 PDF。';
+            } else {
+              hint.textContent = '下載失敗，請改用列印 / 存成 PDF。';
+            }
+          });
+        } else if(!hasClaudeHost){
+          var ok = nativeDownload(blob, filename);
+          btn.disabled = false;
+          hint.textContent = ok ? '已下載圖片。' : '圖片下載失敗，請改用列印 / 存成 PDF。';
+        } else {
+          btn.disabled = false;
+          hint.textContent = '此環境不支援圖片下載，請改用列印 / 存成 PDF。';
+        }
+      }, 'image/png');
+    }).catch(function(){
+      btn.disabled = false;
+      hint.textContent = '圖片產生失敗，請改用列印 / 存成 PDF。';
+    });
+  });
+
+  render();
+})();
+</script>
+
+</body></html>
