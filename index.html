@@ -4,6 +4,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200;600&display=swap" rel="stylesheet">
 <style>
+  /* 標楷體 itself isn't a redistributable web font, so this self-hosts
+     cwTeX Q Kai (kai.woff2, alongside this HTML file) — an open-source
+     (OFL-licensed) Kaiti-style Traditional Chinese font that looks very
+     close to 標楷體 — so every device renders the exact same glyphs,
+     instead of depending on whichever Kaiti font (or none) happens to be
+     installed on the viewer's OS. */
+  @font-face{
+    font-family:'TW Kai';
+    src:url('kai.woff2') format('woff2');
+    font-display:swap;
+  }
+</style>
+<style>
   :root{
     --ink:#1c2333;
     --paper:#fffdf6;
@@ -462,16 +475,14 @@
     return d.innerHTML;
   }
 
-  // 標楷體 (Kaiti / "biaokaiti") is a system font, not something with a
-  // free redistributable web-font version — it ships with Windows as
-  // DFKai-SB and with macOS as Kaiti TC / BiauKai. So instead of loading
-  // it from a font CDN (not possible), this lists the real system font
-  // names FIRST so each OS picks up its own installed Kaiti font; Noto
-  // Serif TC (loaded via the <link> above) is kept only as a last-resort
-  // fallback for devices that have none of those installed (e.g. some
-  // Linux/mobile browsers), so the practice sheet still renders instead
-  // of showing tofu.
-  var GLYPH_FONT = '\'標楷體\',\'DFKai-SB\',\'BiauKai\',\'Kaiti TC\',\'Kaiti SC\',\'STKaiti\',\'KaiTi\',\'Noto Serif TC\',\'Noto Serif CJK TC\',serif';
+  // 'TW Kai' is the self-hosted @font-face above (kai.woff2), so it's
+  // always available regardless of OS — no more depending on whichever
+  // Kaiti-style font (or none at all) happens to be installed locally.
+  // The system font names are kept as a fast-path (renders immediately
+  // with the OS's own 標楷體 if present, before the ~5MB webfont finishes
+  // downloading), then Noto Serif TC as a final fallback in case the
+  // webfont somehow fails to load.
+  var GLYPH_FONT = '\'標楷體\',\'DFKai-SB\',\'BiauKai\',\'TW Kai\',\'Kaiti TC\',\'Kaiti SC\',\'STKaiti\',\'KaiTi\',\'Noto Serif TC\',\'Noto Serif CJK TC\',serif';
   var GLYPH_WEIGHT = 400;
   var PAPER = '#fffdf6';
 
