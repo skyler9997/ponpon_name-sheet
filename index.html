@@ -462,8 +462,17 @@
     return d.innerHTML;
   }
 
-  var GLYPH_FONT = '\'Noto Serif TC\',\'Kaiti TC\',\'KaiTi\',\'DFKai-SB\',\'BiauKai\',\'Noto Serif CJK TC\',serif';
-  var GLYPH_WEIGHT = 600;
+  // 標楷體 (Kaiti / "biaokaiti") is a system font, not something with a
+  // free redistributable web-font version — it ships with Windows as
+  // DFKai-SB and with macOS as Kaiti TC / BiauKai. So instead of loading
+  // it from a font CDN (not possible), this lists the real system font
+  // names FIRST so each OS picks up its own installed Kaiti font; Noto
+  // Serif TC (loaded via the <link> above) is kept only as a last-resort
+  // fallback for devices that have none of those installed (e.g. some
+  // Linux/mobile browsers), so the practice sheet still renders instead
+  // of showing tofu.
+  var GLYPH_FONT = '\'標楷體\',\'DFKai-SB\',\'BiauKai\',\'Kaiti TC\',\'Kaiti SC\',\'STKaiti\',\'KaiTi\',\'Noto Serif TC\',\'Noto Serif CJK TC\',serif';
+  var GLYPH_WEIGHT = 400;
   var PAPER = '#fffdf6';
 
   function fontOutlineSVG(ch, size, outerColor, borderWidth){
