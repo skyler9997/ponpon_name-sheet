@@ -420,7 +420,7 @@
       </div>
     </div>
 
-    <div class="field">
+    <div class="field" id="repField">
       <div class="row">
         <label style="margin:0;">每行練習次數</label>
         <div class="stepper">
@@ -429,6 +429,18 @@
           <button type="button" id="repPlus">＋</button>
         </div>
       </div>
+    </div>
+
+    <div class="field">
+      <div class="toggle-row">
+        <label style="margin:0;">顯示下方練習列</label>
+        <label class="switch">
+          <input type="checkbox" id="showRowsToggle" checked>
+          <span class="track"></span>
+          <span class="thumb"></span>
+        </label>
+      </div>
+      <div class="hint">關閉後只保留上方三個大字格，不顯示下方的小字練習列。</div>
     </div>
 
     <button class="print-btn" id="printBtn">
@@ -455,7 +467,8 @@
     text: '彭姵瑀',
     grid: 'diag',
     reps: 8,
-    orientation: 'landscape'
+    orientation: 'landscape',
+    showRows: true
   };
 
   var pencilBlue = '<svg class="pencil" viewBox="0 0 100 100"><g transform="rotate(45 50 50)">'+
@@ -552,15 +565,18 @@
     });
     bigRow += '</div>';
 
-    var rowsHtml = '<div class="practice-rows">';
-    chars.forEach(function(ch){
-      rowsHtml += '<div class="prow"><div class="plabel">'+esc(ch)+'</div><div class="pcells">';
-      for(var i=0;i<state.reps;i++){
-        rowsHtml += '<div class="pcell">'+pcellSVG(ch)+'</div>';
-      }
-      rowsHtml += '</div></div>';
-    });
-    rowsHtml += '</div>';
+    var rowsHtml = '';
+    if(state.showRows){
+      rowsHtml = '<div class="practice-rows">';
+      chars.forEach(function(ch){
+        rowsHtml += '<div class="prow"><div class="plabel">'+esc(ch)+'</div><div class="pcells">';
+        for(var i=0;i<state.reps;i++){
+          rowsHtml += '<div class="pcell">'+pcellSVG(ch)+'</div>';
+        }
+        rowsHtml += '</div></div>';
+      });
+      rowsHtml += '</div>';
+    }
 
     sheet.innerHTML = header + bigRow + rowsHtml;
     centerGlyphs(sheet);
@@ -600,6 +616,12 @@
   document.getElementById('repPlus').addEventListener('click', function(){
     state.reps = Math.min(12, state.reps + 1);
     document.getElementById('repVal').textContent = state.reps;
+    render();
+  });
+  document.getElementById('showRowsToggle').addEventListener('change', function(e){
+    state.showRows = e.target.checked;
+    var repField = document.getElementById('repField');
+    if(repField){ repField.style.opacity = state.showRows ? '1' : '.45'; repField.style.pointerEvents = state.showRows ? 'auto' : 'none'; }
     render();
   });
   // Printing the live DOM directly can render slightly differently than
